@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime, timezone
 
 
 BASE_URL = "https://data.cityofchicago.org/resource/ydr8-5enu.json"
@@ -29,28 +30,48 @@ def get_permits():
         print(f"API request failed: {exc}")
         return []
 
+def add_ingestion_metadata(permits):
+    """Add metadata about when and where each record was ingested."""
+
+    ingested_at = datetime.now(timezone.utc).isoformat()
+
+    enriched_permits = []
+
+    for permit in permits:
+        record = permit.copy()
+
+        record["_ingested_at"] = ingested_at
+        record["_source"] = "chicago_building_permits"
+
+        enriched_permits.append(record)
+
+    return enriched_permits
+
+def check_identifier_uniqueness(permits):
+    """Check whether candidate identifier fields are unique."""
+
+    ids = [permit.get("id") for permit in permits]
+    permit_numbers = [permit.get("permit_") for permit in permits]
+
+    print("\nIdentifier checks:")
+
+    print(f"Rows: {len(permits)}")
+    print(f"Unique IDs: {len(set(ids))}")
+    print(f"Unique permit numbers: {len(set(permit_numbers))}")
+
+    duplicate_ids = len(ids) - len(set(ids))
+    duplicate_permit_numbers = len(permit_numbers) - len(set(permit_numbers))
+
+    print(f"Duplicate IDs: {duplicate_ids}")
+    print(f"Duplicate permit numbers: {duplicate_permit_numbers}")
+
 
 if __name__ == "__main__":
     permits = get_permits()
 
     if permits:
-        print(f"Retrieved {len(permits)} permits")
+        raw_permits = add_ingestion_metadata(permits)
 
-        print("\nFields returned by the API:")
-        for field in permits[0].keys():
-            print(field)
+        print(f"Retrieved {len(raw_permits)} permits")
 
-        print("\nField completeness:")
-
-        all_fields = set()
-
-        for permit in permits:
-            all_fields.update(permit.keys())
-
-        for field in sorted(all_fields):
-            populated = sum(
-                1 for permit in permits
-                if permit.get(field) not in (None, "")
-            )
-
-            print(f"{field}: {populated}/{len(permits)}")
+        check_identifier_uniqueness(raw_permits)
