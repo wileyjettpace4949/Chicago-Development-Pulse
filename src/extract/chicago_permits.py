@@ -23,12 +23,16 @@ def get_permits():
         return response.json()
 
     except requests.exceptions.Timeout:
-        print("Request timed out. The Chicago data API may be temporarily unavailable.")
+        print(
+            "Request timed out. "
+            "The Chicago data API may be temporarily unavailable."
+        )
         return []
 
     except requests.exceptions.RequestException as exc:
         print(f"API request failed: {exc}")
         return []
+
 
 def shape_raw_permit(permit):
     """Map a Chicago permit record to our raw-layer schema."""
@@ -70,6 +74,7 @@ def shape_raw_permit(permit):
         "contact_2_name": permit.get("contact_2_name"),
     }
 
+
 def add_ingestion_metadata(permits):
     """Shape source records and add ingestion metadata."""
 
@@ -87,6 +92,7 @@ def add_ingestion_metadata(permits):
 
     return raw_permits
 
+
 def validate_raw_permits(permits):
     """Validate required fields in raw permit records."""
 
@@ -103,25 +109,7 @@ def validate_raw_permits(permits):
                     f"for source record {permit.get('source_record_id')}"
                 )
 
-def check_identifier_uniqueness(permits):
-    """Check whether candidate identifier fields are unique."""
-
-    ids = [permit.get("id") for permit in permits]
-    permit_numbers = [permit.get("permit_") for permit in permits]
-
-    print("\nIdentifier checks:")
-
-    print(f"Rows: {len(permits)}")
-    print(f"Unique IDs: {len(set(ids))}")
-    print(f"Unique permit numbers: {len(set(permit_numbers))}")
-
-    duplicate_ids = len(ids) - len(set(ids))
-    duplicate_permit_numbers = len(permit_numbers) - len(set(permit_numbers))
-
-    print(f"Duplicate IDs: {duplicate_ids}")
-    print(f"Duplicate permit numbers: {duplicate_permit_numbers}")
-
-
+            
 if __name__ == "__main__":
     permits = get_permits()
 
